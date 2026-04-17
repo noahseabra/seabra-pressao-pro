@@ -73,7 +73,7 @@ import { Logo } from './components/Logo';
 
 // --- Types ---
 
-const LOGO_URL = '/ghithub/public/logo.png';
+const LOGO_URL = 'https://raw.githubusercontent.com/noahseabra/seabra-pressao-pro/main/ghithub/public/logo.png';
 
 interface Measurement {
   id: string;

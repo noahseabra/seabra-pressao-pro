@@ -16,27 +16,39 @@ export default defineConfig({
         short_name: 'Seabra Pro',
         description: 'Controle Inteligente da Pressão Arterial',
         theme_color: '#000000',
-        background_color: '#000000',
+        background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
+        id: './',
+        start_url: './',
+        scope: './',
         icons: [
           {
-            src: '/ghithub/public/logo.png',
+            src: 'https://raw.githubusercontent.com/noahseabra/seabra-pressao-pro/main/ghithub/public/logo.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: '/ghithub/public/logo.png',
+            src: 'https://raw.githubusercontent.com/noahseabra/seabra-pressao-pro/main/ghithub/public/logo.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
+          }
+        ],
+        screenshots: [
+          {
+            src: 'https://raw.githubusercontent.com/noahseabra/seabra-pressao-pro/main/ghithub/public/logo.png',
+            sizes: '512x512',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'Seabra Pressão Pro Dashboard'
           }
         ]
       }
     })
   ],
-  base: './',
+  base: '/',
   server: {
     port: 3000,
     host: '0.0.0.0',
