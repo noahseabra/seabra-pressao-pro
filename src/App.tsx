@@ -69,9 +69,11 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { analyzePressureImage } from './services/geminiService';
 import { cn } from './lib/utils';
 
+import { Logo } from './components/Logo';
+
 // --- Types ---
 
-const LOGO_URL = `/api/proxy-image?url=${encodeURIComponent('https://storage.googleapis.com/test-media-objects/69796030-cf8b-4a30-811c-6d9b13903104')}`;
+const LOGO_URL = '/logo.png';
 
 interface Measurement {
   id: string;
@@ -598,11 +600,9 @@ export default function App() {
             <div className="relative group w-32 h-32 mb-8">
               <div className="absolute -inset-1 bg-gradient-to-r from-brand-blue to-brand-red rounded-[32px] blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
               <div className="relative aspect-square w-full rounded-[32px] overflow-hidden bg-[#121214] border border-white/10 shadow-2xl">
-                <img 
-                  src={LOGO_URL} 
-                  alt="Logo" 
+                <Logo 
+                  imageSrc={LOGO_URL} 
                   className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
                 />
               </div>
             </div>
@@ -710,7 +710,7 @@ export default function App() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl overflow-hidden shadow-lg border border-white/10">
-              <img src={LOGO_URL} alt="Seabra Pro" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <Logo imageSrc={LOGO_URL} className="w-full h-full object-cover" />
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight">Seabra Pressão Pro</h1>

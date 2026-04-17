@@ -21,13 +21,13 @@ export default defineConfig({
         orientation: 'portrait',
         icons: [
           {
-            src: 'https://storage.googleapis.com/test-media-objects/69796030-cf8b-4a30-811c-6d9b13903104',
+            src: '/logo.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: 'https://storage.googleapis.com/test-media-objects/69796030-cf8b-4a30-811c-6d9b13903104',
+            src: '/logo.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
