@@ -73,7 +73,7 @@ import { Logo } from './components/Logo';
 
 // --- Types ---
 
-const LOGO_URL = '/logo.png';
+const LOGO_URL = '/ghithub/public/logo.png';
 
 interface Measurement {
   id: string;
