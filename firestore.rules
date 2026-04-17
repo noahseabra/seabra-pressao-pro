@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required)
+    //   - displayName: string (optional)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: measurements
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required)
+    //   - systolic: number (required, 40-300)
+    //   - diastolic: number (required, 30-200)
+    //   - pulse: number (optional, 30-250)
+    //   - period: string (required, ['morning', 'afternoon', 'night'])
+    //   - timestamp: timestamp (required)
+    //   - status: string (optional)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // Domain Validators
+    
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             isValidEmail(data.email) &&
+             data.createdAt is timestamp;
+    }
+    
+    function isValidMeasurement(data) {
+      return data.keys().hasAll(['userId', 'systolic', 'diastolic', 'period', 'timestamp']) &&
+             data.userId == request.auth.uid &&
+             data.systolic is number && data.systolic >= 40 && data.systolic <= 300 &&
+             data.diastolic is number && data.diastolic >= 30 && data.diastolic <= 200 &&
+             (!('pulse' in data) || (data.pulse is number && data.pulse >= 30 && data.pulse <= 250)) &&
+             data.period in ['morning', 'afternoon', 'night'] &&
+             data.timestamp is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && 
+                      request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    match /measurements/{measurementId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidMeasurement(request.resource.data);
+      allow update: if isAuthenticated() && isDocOwner() && isValidMeasurement(request.resource.data) &&
+                      request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && isDocOwner();
+    }
+  }
+}

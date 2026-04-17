@@ -1,0 +1,42 @@
+{
+  "entities": {
+    "Measurement": {
+      "title": "Measurement",
+      "description": "A blood pressure measurement record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "systolic": { "type": "number", "description": "Systolic pressure (SYS) in mmHg" },
+        "diastolic": { "type": "number", "description": "Diastolic pressure (DIA) in mmHg" },
+        "pulse": { "type": "number", "description": "Pulse rate in bpm (optional)" },
+        "period": { "type": "string", "enum": ["morning", "afternoon", "night"] },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "description": "Classification (e.g., Normal, High)" }
+      },
+      "required": ["userId", "systolic", "diastolic", "period", "timestamp"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile and settings.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    }
+  },
+  "firestore": {
+    "measurements": {
+      "schema": "Measurement",
+      "description": "Collection of blood pressure measurements."
+    },
+    "users": {
+      "schema": "UserProfile",
+      "description": "Collection of user profiles."
+    }
+  }
+}

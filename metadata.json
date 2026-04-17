@@ -1,0 +1,6 @@
+{
+  "name": "Seabra Pressão Pro",
+  "description": "Controle inteligente da pressão arterial com análise de fotos e histórico detalhado.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": []
+}
