@@ -55,9 +55,18 @@ export interface FirestoreErrorInfo {
   }
 }
 
-export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+export function handleFirestoreError(error: any, operationType: OperationType, path: string | null) {
+  let message = error instanceof Error ? error.message : String(error);
+  
+  // Handle specific Firebase error codes
+  if (error?.code === 'unavailable' || message.includes('the client is offline')) {
+    message = "O banco de dados está iniciando ou temporariamente indisponível. Aguarde alguns segundos e tente novamente.";
+  } else if (error?.code === 'permission-denied') {
+    message = "Acesso negado. Você não tem permissão para realizar esta ação.";
+  }
+
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: message,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -74,19 +83,26 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     operationType,
     path
   };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  
+  if (error?.code !== 'unavailable') {
+    console.error('Firestore Error: ', JSON.stringify(errInfo));
+  } else {
+    console.warn('Firestore temporarily unavailable (starting up).');
+  }
+
+  throw new Error(message);
 }
 
-// Connection Test
-export async function testConnection() {
+// Connection Test with slight retry logic
+export async function testConnection(retries = 3) {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
     console.log("Firebase connection established successfully.");
   } catch (error: any) {
-    if (error?.message?.includes('the client is offline') || error?.code === 'unavailable') {
-      console.warn("Firebase is starting up or temporarily unavailable. This is normal for brand new databases. Please wait a moment.");
-    } else {
+    if ((error?.message?.includes('the client is offline') || error?.code === 'unavailable') && retries > 0) {
+      console.warn(`Firebase is starting up. Retrying in 2 seconds... (${retries} retries left)`);
+      setTimeout(() => testConnection(retries - 1), 2000);
+    } else if (error?.code !== 'unavailable' && !error?.message?.includes('the client is offline')) {
       console.error("Firebase connection error:", error);
     }
   }

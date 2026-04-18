@@ -41,7 +41,9 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer, 
-  ReferenceLine 
+  ReferenceLine,
+  AreaChart,
+  Area 
 } from 'recharts';
 import { 
   auth, 
@@ -293,7 +295,7 @@ export default function App() {
 
     // Header
     let text = `📋 *RELATÓRIO MAPA - SEABRA PRESSÃO PRO* 📋\n`;
-    text += `👤 *Paciente:* ${patientName || 'Não identificado'}\n`;
+    text += `👤 *Paciente:* ${patientName || 'Não informado'}\n`;
     text += `📊 *Total de registros:* ${measurements.length}\n`;
     text += `📅 *Gerado em:* ${new Date().toLocaleString('pt-BR')}\n\n`;
     text += `--- *HISTÓRICO DE MEDIÇÕES (SYS x DIA)* ---\n\n`;
@@ -404,7 +406,7 @@ export default function App() {
     
     // Labels
     currentY += 15;
-    doc.text('PACIENTE', 15, currentY);
+    doc.text('IDENTIFICAÇÃO (PACIENTE)', 15, currentY);
     doc.text('IDADE', pageWidth / 2, currentY);
     
     currentY += 21;
@@ -440,6 +442,18 @@ export default function App() {
       
       return [date, hour, periodLabel, pressure, pulseVal, status];
     });
+
+    // --- WATERMARK ---
+    doc.saveGraphicsState();
+    doc.setGState(new (doc as any).GState({ opacity: 0.05 }));
+    doc.setFontSize(60);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CARLOS SILVA', pageWidth / 2, pageHeight / 2, {
+      align: 'center',
+      angle: 45
+    });
+    doc.restoreGraphicsState();
 
     autoTable(doc, {
       startY: currentY + 8,
@@ -540,8 +554,13 @@ export default function App() {
         timestamp: (doc.data().timestamp as Timestamp).toDate()
       })) as Measurement[];
       setMeasurements(data);
+      if (error?.includes('banco de dados está iniciando')) setError(null);
     }, (err) => {
-      handleFirestoreError(err, OperationType.LIST, 'measurements');
+      try {
+        handleFirestoreError(err, OperationType.LIST, 'measurements');
+      } catch (e: any) {
+        setError(e.message);
+      }
     });
 
     return () => unsubscribe();
@@ -584,6 +603,49 @@ export default function App() {
     }
   };
 
+  const totalAvg = measurements.length > 0 ? {
+    sys: Math.round(measurements.reduce((acc, m) => acc + m.systolic, 0) / measurements.length),
+    dia: Math.round(measurements.reduce((acc, m) => acc + m.diastolic, 0) / measurements.length)
+  } : null;
+
+  const getHealthAlert = () => {
+    if (!totalAvg) return null;
+    const { sys, dia } = totalAvg;
+    
+    if (sys >= 180 || dia >= 120) return {
+      icon: <AlertCircle className="w-5 h-5 text-red-600" />,
+      title: "URGÊNCIA HIPERTENSIVA",
+      message: "Sua média está criticamente alta. Procure atendimento médico imediatamente.",
+      color: "bg-red-500/10 border-red-500/20 text-red-500"
+    };
+    if (sys >= 140 || dia >= 90) return {
+      icon: <AlertCircle className="w-5 h-5 text-brand-red" />,
+      title: "HIPERTENSÃO DETECTADA",
+      message: "Sua média indica pressão alta estável. Consulte um cardiologista para avaliação.",
+      color: "bg-brand-red/10 border-brand-red/20 text-brand-red"
+    };
+    if (sys >= 130 || dia >= 80) return {
+      icon: <AlertCircle className="w-5 h-5 text-orange-500" />,
+      title: "PRESSÃO EM ALERTA",
+      message: "Você está na faixa de pré-hipertensão. Considere reduzir o sal e praticar exercícios.",
+      color: "bg-orange-500/10 border-orange-500/20 text-orange-500"
+    };
+    if (sys >= 120 || dia >= 80) return {
+      icon: <AlertCircle className="w-5 h-5 text-brand-yellow" />,
+      title: "PRESSÃO ELEVADA",
+      message: "Sua pressão está um pouco acima do ideal. Monitore com mais frequência.",
+      color: "bg-brand-yellow/10 border-brand-yellow/20 text-brand-yellow"
+    };
+    return {
+      icon: <Activity className="w-5 h-5 text-brand-green" />,
+      title: "NÍVEIS IDEAIS",
+      message: "Sua média de pressão está excelente! Continue mantendo seus hábitos saudáveis.",
+      color: "bg-brand-green/10 border-brand-green/20 text-brand-green"
+    };
+  };
+
+  const healthAlert = getHealthAlert();
+
   const stats = {
     last: measurements[0],
     todayAvg: measurements.filter(m => m.timestamp.toDateString() === new Date().toDateString()).length > 0 
@@ -592,10 +654,7 @@ export default function App() {
           dia: Math.round(measurements.filter(m => m.timestamp.toDateString() === new Date().toDateString()).reduce((acc, m) => acc + m.diastolic, 0) / measurements.filter(m => m.timestamp.toDateString() === new Date().toDateString()).length)
         }
       : null,
-    totalAvg: measurements.length > 0 ? {
-      sys: Math.round(measurements.reduce((acc, m) => acc + m.systolic, 0) / measurements.length),
-      dia: Math.round(measurements.reduce((acc, m) => acc + m.diastolic, 0) / measurements.length)
-    } : null,
+    totalAvg,
   };
 
   if (loading) {
@@ -792,6 +851,21 @@ export default function App() {
       <main className="px-6 space-y-8 max-w-2xl mx-auto py-4">
         {activeTab === 'hoje' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+            {/* Dynamic Health Alert */}
+            {healthAlert && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }} 
+                animate={{ opacity: 1, y: 0 }}
+                className={cn("p-6 rounded-[32px] border flex gap-4 items-start", healthAlert.color)}
+              >
+                <div className="mt-1">{healthAlert.icon}</div>
+                <div className="space-y-1">
+                  <h4 className="text-[10px] font-black tracking-widest uppercase">{healthAlert.title}</h4>
+                  <p className="text-xs font-bold leading-relaxed">{healthAlert.message}</p>
+                </div>
+              </motion.div>
+            )}
+
             {/* Quick Stats Rows */}
             <div className="grid grid-cols-2 gap-4">
               <div className="glass-card p-6 space-y-4">
@@ -860,11 +934,39 @@ export default function App() {
                 <p className="text-xs text-gray-500 uppercase tracking-widest font-bold">Registre seus dados manualmente ou por foto</p>
                 
                 <div className="grid grid-cols-2 gap-4">
-                  <button onClick={() => { setPeriod(getAutoPeriod()); setShowForm(true); setTimeout(() => cameraInputRef.current?.click(), 100); }} className="flex items-center justify-center gap-3 py-6 bg-white/5 rounded-[32px] border border-white/5 hover:bg-white/10 transition-colors font-bold">
-                    <Camera className="w-6 h-6" /> Câmera
+                  <button 
+                    disabled={isAnalyzing}
+                    onClick={() => { setPeriod(getAutoPeriod()); setShowForm(true); setTimeout(() => cameraInputRef.current?.click(), 100); }} 
+                    className="flex flex-col items-center justify-center gap-3 btn-neon-blue relative overflow-hidden"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="w-6 h-6 animate-spin text-white" />
+                        <span className="text-[10px] uppercase font-black tracking-widest">Processando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="w-6 h-6" /> 
+                        <span className="text-fluorescent">Câmera</span>
+                      </>
+                    )}
                   </button>
-                  <button onClick={() => { setPeriod(getAutoPeriod()); setShowForm(true); setTimeout(() => fileInputRef.current?.click(), 100); }} className="flex items-center justify-center gap-3 py-6 bg-white/5 rounded-[32px] border border-white/5 hover:bg-white/10 transition-colors font-bold">
-                    <ImageIcon className="w-6 h-6" /> Galeria
+                  <button 
+                    disabled={isAnalyzing}
+                    onClick={() => { setPeriod(getAutoPeriod()); setShowForm(true); setTimeout(() => fileInputRef.current?.click(), 100); }} 
+                    className="flex flex-col items-center justify-center gap-3 btn-neon-blue relative overflow-hidden"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="w-6 h-6 animate-spin text-white" />
+                        <span className="text-[10px] uppercase font-black tracking-widest">Processando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon className="w-6 h-6" /> 
+                        <span className="text-fluorescent">Galeria</span>
+                      </>
+                    )}
                   </button>
                 </div>
 
@@ -873,10 +975,10 @@ export default function App() {
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pt-8">
                        <div className="space-y-4">
                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Período</span>
-                         <div className="grid grid-cols-3 gap-4">
-                            <PeriodButton active={period==='morning'} onClick={()=>setPeriod('morning')} icon={<Sunrise className="w-6 h-6"/>} label="MANHÃ" />
-                            <PeriodButton active={period==='afternoon'} onClick={()=>setPeriod('afternoon')} icon={<Sun className="w-6 h-6"/>} label="TARDE" />
-                            <PeriodButton active={period==='night'} onClick={()=>setPeriod('night')} icon={<Moon className="w-6 h-6"/>} label="NOITE" />
+                         <div className="grid grid-cols-3 gap-3">
+                            <PeriodButton active={period==='morning'} onClick={()=>setPeriod('morning')} icon={<Sunrise className="w-5 h-5"/>} label="MANHÃ" />
+                            <PeriodButton active={period==='afternoon'} onClick={()=>setPeriod('afternoon')} icon={<Sun className="w-5 h-5"/>} label="TARDE" />
+                            <PeriodButton active={period==='night'} onClick={()=>setPeriod('night')} icon={<Moon className="w-5 h-5"/>} label="NOITE" />
                          </div>
                        </div>
 
@@ -920,50 +1022,164 @@ export default function App() {
         )}
 
         {activeTab === 'grafico' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-10">
             <div className="space-y-2">
               <h2 className="text-3xl font-bold tracking-tight">Evolução</h2>
-              <p className="text-xs text-gray-500 uppercase tracking-widest font-bold">Acompanhe seus dados graficamente</p>
+              <p className="text-xs text-gray-500 uppercase tracking-widest font-bold">Análise detalhada de sístole, diástole e pulso</p>
             </div>
 
+            {/* Filtros de Período */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
               {(['all', 'morning', 'afternoon', 'night'] as const).map((f) => (
                 <button 
                   key={f} 
                   onClick={() => setChartFilter(f)}
                   className={cn(
-                    "px-6 py-2.5 rounded-full text-[10px] font-bold tracking-widest uppercase border transition-all shrink-0",
-                    chartFilter === f ? "bg-brand-blue border-brand-blue text-white" : "bg-bg-input border-white/5 text-gray-500"
+                    "px-6 py-3 rounded-2xl text-[10px] font-bold tracking-[0.2em] uppercase border transition-all shrink-0",
+                    chartFilter === f 
+                      ? "bg-brand-blue border-transparent text-white shadow-lg shadow-brand-blue/20" 
+                      : "bg-white/5 border-white/10 text-gray-500 hover:bg-white/10"
                   )}
                 >
-                  {f === 'all' ? 'todos' : f === 'morning' ? 'manhã' : f === 'afternoon' ? 'tarde' : 'noite'}
+                  {f === 'all' ? 'Todos Períodos' : f === 'morning' ? 'Manhã' : f === 'afternoon' ? 'Tarde' : 'Noite'}
                 </button>
               ))}
             </div>
 
-            <div className="glass-card p-8 space-y-8">
-              <div className="h-[300px] w-full">
+            {/* Resumo Estatístico */}
+            <div className="grid grid-cols-2 gap-4">
+               {[
+                 { label: 'Sistólica Média', value: [...measurements].filter(m => chartFilter === 'all' || m.period === chartFilter).reduce((acc, m) => acc + m.systolic, 0) / ([...measurements].filter(m => chartFilter === 'all' || m.period === chartFilter).length || 1), unit: 'mmHg', color: 'text-brand-red' },
+                 { label: 'Diastólica Média', value: [...measurements].filter(m => chartFilter === 'all' || m.period === chartFilter).reduce((acc, m) => acc + m.diastolic, 0) / ([...measurements].filter(m => chartFilter === 'all' || m.period === chartFilter).length || 1), unit: 'mmHg', color: 'text-brand-blue' }
+               ].map((stat, i) => (
+                 <div key={i} className="glass-card p-6 border border-white/5">
+                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">{stat.label}</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className={cn("text-2xl font-black", stat.color)}>{Math.round(stat.value)}</span>
+                      <span className="text-[9px] font-bold text-gray-600 uppercase tracking-tighter">{stat.unit}</span>
+                    </div>
+                 </div>
+               ))}
+            </div>
+
+            {/* Gráfico de Pressão Arterial */}
+            <div className="glass-card p-8 border border-white/5 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-brand-blue" />
+                  Presão Arterial
+                </h3>
+                <div className="flex gap-4">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-brand-red shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                    <span className="text-[9px] font-bold text-gray-500 uppercase">SYS</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-brand-blue shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                    <span className="text-[9px] font-bold text-gray-500 uppercase">DIA</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-[250px] w-full mt-4">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={[...measurements].filter(m => chartFilter === 'all' || m.period === chartFilter).reverse()}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} opacity={0.5} />
-                    <XAxis dataKey="timestamp" hide />
-                    <YAxis domain={['auto', 'auto']} stroke="#444" fontSize={10} axisLine={false} tickLine={false} />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#121214', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}
-                      labelFormatter={(val) => new Date(val).toLocaleDateString()}
+                  <LineChart 
+                    data={[...measurements]
+                      .filter(m => chartFilter === 'all' || m.period === chartFilter)
+                      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+                    }
+                  >
+                    <CartesianGrid strokeDasharray="4 4" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis 
+                      dataKey="timestamp" 
+                      hide={measurements.length > 10}
+                      tick={{ fontSize: 9, fill: '#444' }}
+                      tickFormatter={(val) => new Date(val).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                     />
-                    <Line type="monotone" dataKey="systolic" stroke="#EF4444" strokeWidth={4} dot={false} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="diastolic" stroke="#3B82F6" strokeWidth={4} dot={false} activeDot={{ r: 6 }} />
+                    <YAxis 
+                      domain={['dataMin - 10', 'dataMax + 10']} 
+                      stroke="rgba(255,255,255,0.1)" 
+                      fontSize={10} 
+                      axisLine={false} 
+                      tickLine={false} 
+                    />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '10px' }}
+                      labelFormatter={(val) => new Date(val).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      itemStyle={{ padding: '0 4px', fontWeight: 'bold' }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="systolic" 
+                      stroke="#EF4444" 
+                      strokeWidth={3} 
+                      dot={{ r: 3, fill: '#EF4444', strokeWidth: 0 }} 
+                      activeDot={{ r: 6, strokeWidth: 0 }} 
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="diastolic" 
+                      stroke="#3B82F6" 
+                      strokeWidth={3} 
+                      dot={{ r: 3, fill: '#3B82F6', strokeWidth: 0 }} 
+                      activeDot={{ r: 6, strokeWidth: 0 }} 
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex justify-center gap-8">
-                <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                  <div className="w-2.5 h-2.5 rounded-full bg-brand-red" /> Sistólica
-                </div>
-                <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                  <div className="w-2.5 h-2.5 rounded-full bg-brand-blue" /> Diastólica
-                </div>
+            </div>
+
+            {/* Gráfico de Pulso */}
+            <div className="glass-card p-8 border border-white/5 space-y-6">
+               <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-brand-green" />
+                  Ritmo Cardíaco (Pulso)
+                </h3>
+              </div>
+
+              <div className="h-[180px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart 
+                    data={[...measurements]
+                      .filter(m => (chartFilter === 'all' || m.period === chartFilter) && m.pulse)
+                      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+                    }
+                  >
+                    <defs>
+                      <linearGradient id="colorPulse" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="4 4" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis dataKey="timestamp" hide />
+                    <YAxis 
+                      domain={['dataMin - 5', 'dataMax + 5']} 
+                      stroke="rgba(255,255,255,0.1)" 
+                      fontSize={10} 
+                      axisLine={false} 
+                      tickLine={false} 
+                    />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '10px' }}
+                      labelFormatter={(val) => new Date(val).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="pulse" 
+                      stroke="#10B981" 
+                      fillOpacity={1} 
+                      fill="url(#colorPulse)" 
+                      strokeWidth={3}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="text-center">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                  Pulso Médio: {Math.round([...measurements].filter(m => (chartFilter === 'all' || m.period === chartFilter) && m.pulse).reduce((acc, m) => acc + (m.pulse || 0), 0) / ([...measurements].filter(m => (chartFilter === 'all' || m.period === chartFilter) && m.pulse).length || 1))} BPM
+                </p>
               </div>
             </div>
           </motion.div>
@@ -1105,15 +1321,15 @@ export default function App() {
               <p className="text-gray-500 text-sm">Preencha os dados que aparecerão no documento formal.</p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Paciente</label>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Paciente / Identificação</label>
                 <input 
                   type="text" 
                   value={patientName}
                   onChange={(e) => setPatientName(e.target.value)}
                   className="w-full bg-[#1A1A1A] border-none rounded-2xl py-4 px-5 text-white placeholder:text-gray-700 focus:ring-1 focus:ring-brand-blue/50"
-                  placeholder="Nome completo"
+                  placeholder="Ex: Carlos Silva"
                 />
               </div>
               
@@ -1177,14 +1393,14 @@ function PeriodButton({ active, onClick, icon, label }: { active: boolean, onCli
     <button 
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center justify-center gap-3 p-6 rounded-[32px] border transition-all duration-300 aspect-square",
+        "flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border transition-all duration-300",
         active 
-          ? "bg-brand-yellow/10 border-brand-yellow text-brand-yellow glow-yellow" 
+          ? "bg-brand-yellow/10 border-brand-yellow text-brand-yellow shadow-[0_0_15px_rgba(245,158,11,0.15)]" 
           : "bg-bg-input border-white/5 text-gray-500 hover:bg-white/5 transition-colors"
       )}
     >
       <div className={cn("transition-transform duration-300", active && "scale-110")}>{icon}</div>
-      <span className="text-[10px] font-bold tracking-widest">{label}</span>
+      <span className="text-[9px] font-bold tracking-widest">{label}</span>
     </button>
   );
 }
