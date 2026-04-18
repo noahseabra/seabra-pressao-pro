@@ -1,6 +1,8 @@
 {
   "name": "Seabra Pressão Pro",
-  "description": "Controle inteligente da pressão arterial com análise de fotos e histórico detalhado.",
-  "requestFramePermissions": ["camera"],
+  "description": "Sistema Inteligente de monitoramento e análise de pressão arterial com tecnologia PWA.",
+  "requestFramePermissions": [
+    "camera"
+  ],
   "majorCapabilities": []
 }

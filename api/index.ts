@@ -1,8 +1,79 @@
 import express from 'express';
+import { GoogleGenAI, Type } from "@google/genai";
 
 const app = express();
+app.use(express.json({ limit: '10mb' }));
+
+// Initialize Gemini safely
+let genAI: GoogleGenAI | null = null;
+const getGenAI = () => {
+  if (!genAI) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error('GEMINI_API_KEY is not set');
+      return null;
+    }
+    genAI = new GoogleGenAI({ apiKey });
+  }
+  return genAI;
+};
 
 // API routes
+app.post('/api/analyze', async (req, res) => {
+  const { image } = req.body;
+  if (!image) {
+    return res.status(400).json({ error: 'Image data is required' });
+  }
+
+  const ai = getGenAI();
+  if (!ai) {
+    return res.status(500).json({ error: 'AI service not configured' });
+  }
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              inlineData: {
+                mimeType: "image/jpeg",
+                data: image,
+              },
+            },
+            {
+              text: "Analyze this image of a blood pressure monitor. Extract the Systolic (SYS), Diastolic (DIA), and Pulse (PUL/min) values. If you cannot read the values, return 0 for systolic and diastolic.",
+            },
+          ],
+        },
+      ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            systolic: { type: Type.NUMBER },
+            diastolic: { type: Type.NUMBER },
+            pulse: { type: Type.NUMBER, nullable: true },
+          },
+          required: ["systolic", "diastolic"],
+        },
+      }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("No response from AI");
+    
+    const result = JSON.parse(text.trim());
+    res.json(result);
+  } catch (error) {
+    console.error("AI Analysis Error:", error);
+    res.status(500).json({ error: 'Failed to analyze image' });
+  }
+});
+
 app.get('/api/proxy-image', async (req, res) => {
   const imageUrl = req.query.url;
   if (!imageUrl || typeof imageUrl !== 'string') {
