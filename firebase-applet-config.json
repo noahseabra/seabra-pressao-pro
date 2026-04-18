@@ -1,10 +1,10 @@
 {
-  "projectId": "gen-lang-client-0279562809",
-  "appId": "1:553792648262:web:b3702e6912ffbeb7f98647",
-  "apiKey": "AIzaSyC4xkxfFb_hCeXpp95A8c-D_i4a8ULNTKM",
-  "authDomain": "gen-lang-client-0279562809.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-807fe72e-2eeb-4324-8c10-923aa0c860b0",
-  "storageBucket": "gen-lang-client-0279562809.firebasestorage.app",
-  "messagingSenderId": "553792648262",
-  "measurementId": ""
+  "projectId": "villadosabor-spnr",
+  "appId": "1:185445725505:web:7d9a22d132e9654c415dc0",
+  "apiKey": "AIzaSyBZegEMhKXgkOYzNSmU0Xc8_txtOjh50Nc",
+  "authDomain": "villadosabor-spnr.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "villadosabor-spnr.firebasestorage.app",
+  "messagingSenderId": "185445725505",
+  "measurementId": "G-6HE0D42WH4"
 }
