@@ -1,7 +1,18 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Initialize Gemini on the client side
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Initialize Gemini lazily
+let ai: GoogleGenAI | null = null;
+
+function getAI() {
+  if (!ai) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("API Key do Gemini não encontrada.");
+    }
+    ai = new GoogleGenAI({ apiKey });
+  }
+  return ai;
+}
 
 export interface AnalysisResult {
   systolic: number;
@@ -12,24 +23,24 @@ export interface AnalysisResult {
 
 export async function analyzePressureImage(base64Image: string): Promise<AnalysisResult> {
   try {
-    const response = await ai.models.generateContent({
+    const genAI = getAI();
+    
+    // In @google/genai v1, use ai.models.generateContent
+    const response = await genAI.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              inlineData: {
-                mimeType: "image/jpeg",
-                data: base64Image,
-              },
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              mimeType: "image/jpeg",
+              data: base64Image,
             },
-            {
-              text: "Analyze this image of a blood pressure monitor. Extract the Systolic (SYS), Diastolic (DIA), and Pulse (PUL/min) values. If you cannot read the values, return 0 for systolic and diastolic.",
-            },
-          ],
-        },
-      ],
+          },
+          {
+            text: "Analyze this image of a blood pressure monitor. Extract the Systolic (SYS), Diastolic (DIA), and Pulse (PUL/min) values. If you cannot read the values, return 0 for systolic and diastolic. Return ONLY JSON.",
+          },
+        ],
+      },
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -45,8 +56,8 @@ export async function analyzePressureImage(base64Image: string): Promise<Analysi
     });
 
     const text = response.text;
-    if (!text) throw new Error("No response from AI");
-    
+    if (!text) throw new Error("Sem resposta da IA");
+
     const result = JSON.parse(text.trim());
     
     if (result.systolic === 0 && result.diastolic === 0) {

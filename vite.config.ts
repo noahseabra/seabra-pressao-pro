@@ -10,7 +10,9 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
+      },
       manifest: {
         name: 'Seabra Pressão Pro',
         short_name: 'Seabra Pro',
@@ -24,13 +26,13 @@ export default defineConfig({
         scope: './',
         icons: [
           {
-            src: 'https://raw.githubusercontent.com/noahseabra/seabra-pressao-pro/main/ghithub/public/logo.png',
+            src: 'https://raw.githubusercontent.com/noahseabra/seabra-pressao-pro/main/public/logo.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: 'https://raw.githubusercontent.com/noahseabra/seabra-pressao-pro/main/ghithub/public/logo.png',
+            src: 'https://raw.githubusercontent.com/noahseabra/seabra-pressao-pro/main/public/logo.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
@@ -38,7 +40,7 @@ export default defineConfig({
         ],
         screenshots: [
           {
-            src: 'https://raw.githubusercontent.com/noahseabra/seabra-pressao-pro/main/ghithub/public/logo.png',
+            src: 'https://raw.githubusercontent.com/noahseabra/seabra-pressao-pro/main/public/logo.png',
             sizes: '512x512',
             type: 'image/png',
             form_factor: 'narrow',
@@ -49,6 +51,10 @@ export default defineConfig({
     })
   ],
   base: '/',
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+  },
   server: {
     port: 3000,
     host: '0.0.0.0',

@@ -83,3 +83,11 @@
 .glow-blue {
   box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -13,11 +13,24 @@ import {
 import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, Timestamp, deleteDoc, doc, getDocs, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId === '(default)' ? undefined : firebaseConfig.firestoreDatabaseId);
-export const googleProvider = new GoogleAuthProvider();
+// Initialize Firebase with safety checks
+let app;
+let auth: any;
+let db: any;
+let googleProvider: any;
+
+try {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app, firebaseConfig.firestoreDatabaseId === '(default)' ? undefined : firebaseConfig.firestoreDatabaseId);
+  googleProvider = new GoogleAuthProvider();
+} catch (e) {
+  console.error("Firebase Initialization Failed:", e);
+  // We'll throw a more descriptive error that main.tsx can catch
+  throw new Error("Falha ao conectar com o servidor central do Seabra Pro. Verifique sua conexão.");
+}
+
+export { auth, db, googleProvider };
 
 // Auth Helpers
 export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
