@@ -1,10 +1,10 @@
 {
-  "projectId": "villadosabor-spnr",
-  "appId": "1:185445725505:web:7d9a22d132e9654c415dc0",
-  "apiKey": "AIzaSyBZegEMhKXgkOYzNSmU0Xc8_txtOjh50Nc",
-  "authDomain": "villadosabor-spnr.firebaseapp.com",
+  "projectId": "seabra-pressao-pro",
+  "appId": "1:309492851730:web:c0889d70d185caf158e4cb",
+  "apiKey": "AIzaSyD66xFLKMRrvMBDDekBqUli_ctzC4XRfHQ",
+  "authDomain": "seabra-pressao-pro.firebaseapp.com",
   "firestoreDatabaseId": "(default)",
-  "storageBucket": "villadosabor-spnr.firebasestorage.app",
-  "messagingSenderId": "185445725505",
-  "measurementId": "G-6HE0D42WH4"
+  "storageBucket": "seabra-pressao-pro.firebasestorage.app",
+  "messagingSenderId": "309492851730",
+  "measurementId": "G-CP39SVYWWE"
 }

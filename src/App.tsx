@@ -605,7 +605,7 @@ export default function App() {
       } catch (err: any) {
         console.error('Erro Google Login:', err);
         if (err.code === 'auth/unauthorized-domain') {
-          setError('DOMÍNIO NÃO AUTORIZADO: Verifique se você clicou em "Export to GitHub" e se o link da Vercel foi adicionado no console do Firebase (villadosabor-spnr).');
+          setError('DOMÍNIO NÃO AUTORIZADO: Verifique se você clicou em "Export to GitHub" e se o link da Vercel foi adicionado no console do Firebase (seabra-pressao-pro).');
         } else {
           setError('Erro ao entrar com Google: ' + (err.message || err.code));
         }
