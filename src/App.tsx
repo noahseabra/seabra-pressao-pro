@@ -503,6 +503,7 @@ export default function App() {
   const [showForm, setShowForm] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
@@ -851,7 +852,7 @@ export default function App() {
                 <p className="text-xs text-gray-500 uppercase tracking-widest font-bold">Registre seus dados manualmente ou por foto</p>
                 
                 <div className="grid grid-cols-2 gap-4">
-                  <button onClick={() => { setShowForm(true); setTimeout(() => fileInputRef.current?.click(), 100); }} className="flex items-center justify-center gap-3 py-6 bg-white/5 rounded-[32px] border border-white/5 hover:bg-white/10 transition-colors font-bold">
+                  <button onClick={() => { setShowForm(true); setTimeout(() => cameraInputRef.current?.click(), 100); }} className="flex items-center justify-center gap-3 py-6 bg-white/5 rounded-[32px] border border-white/5 hover:bg-white/10 transition-colors font-bold">
                     <Camera className="w-6 h-6" /> Câmera
                   </button>
                   <button onClick={() => { setShowForm(true); setTimeout(() => fileInputRef.current?.click(), 100); }} className="flex items-center justify-center gap-3 py-6 bg-white/5 rounded-[32px] border border-white/5 hover:bg-white/10 transition-colors font-bold">
@@ -1059,6 +1060,7 @@ export default function App() {
 
       {/* Inputs Ocultos */}
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
+      <input type="file" ref={cameraInputRef} className="hidden" accept="image/*" capture="environment" onChange={handleFileUpload} />
       
       {/* Logout Dialog */}
       <AnimatePresence>
