@@ -90,6 +90,13 @@ type Period = 'morning' | 'afternoon' | 'night';
 
 // --- Utils ---
 
+const getAutoPeriod = (): Period => {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 18) return 'afternoon';
+  return 'night';
+};
+
 const getStatus = (sys: number, dia: number) => {
   if (sys >= 180 || dia >= 120) return 'Crise Hipertensiva';
   if (sys >= 140 || dia >= 90) return 'Hipertensão Estágio 2';
@@ -200,6 +207,7 @@ export default function App() {
           setSystolic(result.systolic.toString());
           setDiastolic(result.diastolic.toString());
           if (result.pulse) setPulse(result.pulse.toString());
+          setPeriod(getAutoPeriod());
           setShowForm(true);
         }
         setIsAnalyzing(false);
@@ -499,7 +507,7 @@ export default function App() {
   const [systolic, setSystolic] = useState<string>('');
   const [diastolic, setDiastolic] = useState<string>('');
   const [pulse, setPulse] = useState<string>('');
-  const [period, setPeriod] = useState<Period>('afternoon');
+  const [period, setPeriod] = useState<Period>(getAutoPeriod());
   const [showForm, setShowForm] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -852,10 +860,10 @@ export default function App() {
                 <p className="text-xs text-gray-500 uppercase tracking-widest font-bold">Registre seus dados manualmente ou por foto</p>
                 
                 <div className="grid grid-cols-2 gap-4">
-                  <button onClick={() => { setShowForm(true); setTimeout(() => cameraInputRef.current?.click(), 100); }} className="flex items-center justify-center gap-3 py-6 bg-white/5 rounded-[32px] border border-white/5 hover:bg-white/10 transition-colors font-bold">
+                  <button onClick={() => { setPeriod(getAutoPeriod()); setShowForm(true); setTimeout(() => cameraInputRef.current?.click(), 100); }} className="flex items-center justify-center gap-3 py-6 bg-white/5 rounded-[32px] border border-white/5 hover:bg-white/10 transition-colors font-bold">
                     <Camera className="w-6 h-6" /> Câmera
                   </button>
-                  <button onClick={() => { setShowForm(true); setTimeout(() => fileInputRef.current?.click(), 100); }} className="flex items-center justify-center gap-3 py-6 bg-white/5 rounded-[32px] border border-white/5 hover:bg-white/10 transition-colors font-bold">
+                  <button onClick={() => { setPeriod(getAutoPeriod()); setShowForm(true); setTimeout(() => fileInputRef.current?.click(), 100); }} className="flex items-center justify-center gap-3 py-6 bg-white/5 rounded-[32px] border border-white/5 hover:bg-white/10 transition-colors font-bold">
                     <ImageIcon className="w-6 h-6" /> Galeria
                   </button>
                 </div>
