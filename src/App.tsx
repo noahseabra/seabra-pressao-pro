@@ -229,11 +229,21 @@ export default function App() {
         await signUpWithEmail(email, password);
       }
     } catch (err: any) {
-      const message = err.code === 'auth/user-not-found' ? 'Usuário não encontrado.' :
-                      err.code === 'auth/wrong-password' ? 'Senha incorreta.' :
-                      err.code === 'auth/email-already-in-use' ? 'Este e-mail já está em uso.' :
-                      err.code === 'auth/weak-password' ? 'A senha deve ter pelo menos 6 caracteres.' :
-                      'Erro ao realizar autenticação.';
+      console.error('Erro de Autenticação:', err);
+      let message = 'Erro ao realizar autenticação.';
+      
+      if (err.code === 'auth/unauthorized-domain') {
+        message = 'ERRO: Este domínio não está autorizado no Firebase. Se você já adicionou no console, clique em "Export to GitHub" nas configurações do AI Studio para atualizar o site na Vercel.';
+      } else if (err.code === 'auth/user-not-found') {
+        message = 'Usuário não encontrado.';
+      } else if (err.code === 'auth/wrong-password') {
+        message = 'Senha incorreta.';
+      } else if (err.code === 'auth/email-already-in-use') {
+        message = 'Este e-mail já está em uso.';
+      } else if (err.code === 'auth/weak-password') {
+        message = 'A senha deve ter pelo menos 6 caracteres.';
+      }
+      
       setError(message);
     } finally {
       setAuthLoading(false);
@@ -588,6 +598,20 @@ export default function App() {
   }
 
   if (!user) {
+    const handleGoogleLogin = async () => {
+      setError(null);
+      try {
+        await signInWithGoogle();
+      } catch (err: any) {
+        console.error('Erro Google Login:', err);
+        if (err.code === 'auth/unauthorized-domain') {
+          setError('DOMÍNIO NÃO AUTORIZADO: Verifique se você clicou em "Export to GitHub" e se o link da Vercel foi adicionado no console do Firebase (villadosabor-spnr).');
+        } else {
+          setError('Erro ao entrar com Google: ' + (err.message || err.code));
+        }
+      }
+    };
+
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#000000]">
         <motion.div 
@@ -683,7 +707,7 @@ export default function App() {
             </div>
 
             <button
-              onClick={signInWithGoogle}
+              onClick={handleGoogleLogin}
               className="w-full bg-white text-black py-4 rounded-[22px] font-bold flex items-center justify-center gap-4 transition-all active:scale-[0.97] hover:bg-gray-100 shadow-xl"
             >
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6" alt="Google" referrerPolicy="no-referrer" />
