@@ -19,8 +19,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build project
-        run: npm run build
+      - name: Build project (Ionic)
+        run: npx ionic build --prod
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -28,10 +28,11 @@ jobs:
           distribution: 'temurin'
           java-version: 17
 
+      - name: Sync Capacitor
+        run: npx cap sync android
+
       - name: Build Android APK
         run: |
-          npm install -g @ionic/cli
-          npx cap sync android
           cd android
           ./gradlew assembleDebug
 
