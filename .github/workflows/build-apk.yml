@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node
@@ -16,24 +16,20 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install deps
+      - name: Install dependencies
         run: npm install
 
-      - name: Build (modo seguro)
+      - name: Build web (Ionic ou fallback)
         run: |
-          if [ -f "angular.json" ]; then
-            npx ionic build --prod
-          else
-            npm run build || echo "sem build, continuando"
-          fi
+          npx ionic build --prod || npm run build || echo "sem build, continuando"
 
       - name: Install Capacitor
-        run: npm install @capacitor/cli @capacitor/android
+        run: npm install @capacitor/cli @capacitor/core @capacitor/android
 
-      - name: Create Android
-        run: npx cap add android || echo "já existe"
+      - name: Add Android (se não existir)
+        run: npx cap add android || echo "Android já existe"
 
-      - name: Sync
+      - name: Sync Capacitor
         run: npx cap sync android
 
       - name: Setup Java
