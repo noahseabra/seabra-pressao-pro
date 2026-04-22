@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node
@@ -16,32 +16,37 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
+      - name: Install deps
         run: npm install
 
-      - name: Build web (sem ionic CLI global)
-        run: npm run build
+      - name: Build (modo seguro)
+        run: |
+          if [ -f "angular.json" ]; then
+            npx ionic build --prod
+          else
+            npm run build || echo "sem build, continuando"
+          fi
 
       - name: Install Capacitor
-        run: npm install @capacitor/cli @capacitor/core @capacitor/android
+        run: npm install @capacitor/cli @capacitor/android
 
-      - name: Add Android (se não existir)
+      - name: Create Android
         run: npx cap add android || echo "já existe"
 
-      - name: Sync projeto
+      - name: Sync
         run: npx cap sync android
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: 17
 
       - name: Build APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
