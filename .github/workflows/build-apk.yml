@@ -8,43 +8,45 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install dependencies
+      - name: Instalar dependências
         run: npm install
 
-      - name: Build web (Ionic ou fallback)
+      - name: Build do projeto (Ionic)
         run: |
-          npx ionic build --prod || npm run build || echo "sem build, continuando"
+          npx ionic build --prod || npm run build || echo "sem build"
 
-      - name: Install Capacitor
+      - name: Instalar Capacitor
         run: npm install @capacitor/cli @capacitor/core @capacitor/android
 
-      - name: Add Android (se não existir)
+      - name: Criar Android (se não existir)
         run: npx cap add android || echo "Android já existe"
 
-      - name: Sync Capacitor
+      - name: Sincronizar projeto
         run: npx cap sync android
 
-      - name: Setup Java
+      - name: Setup Java (necessário pro Android)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
+      - name: Dar permissão ao Gradle
+        run: chmod +x android/gradlew
+
       - name: Build APK
         run: |
           cd android
-          chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
 
-      - name: Upload APK
+      - name: Upload do APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug.apk
